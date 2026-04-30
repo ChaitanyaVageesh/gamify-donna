@@ -1,3 +1,20 @@
-node_modules
-.next/
+# Dependencies
 node_modules/
+
+# Next.js build output — do NOT commit
+.next/
+out/
+
+# Environment files — do NOT commit
+.env
+.env.local
+.env.*.local
+
+# Vercel
+.vercel
+
+# OS / debug
+.DS_Store
+npm-debug.log*
+*.tsbuildinfo
+next-env.d.ts
