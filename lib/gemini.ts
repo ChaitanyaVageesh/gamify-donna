@@ -63,7 +63,7 @@ Score each dimension from 1-10 (decimals allowed):
 
 1. impact_score: How much does this task move the needle on the KPI? Consider leverage and measurability.
 2. effort_score: Intellectual/creative work required. Consider complexity and expertise needed.
-3. time_value_score: Value of human time invested.
+3. time_value_score: Value of human time invested. Score lower if task was not a priority, but a lot of time was invested. Score lower if a task was given more time than it required.
    - HIGH (8-10): Strategic decisions, client relationships, creative problem-solving, novel R&D, complex negotiations
    - MEDIUM (4-7): Technical implementation, analysis, planning, coordination
    - LOW (1-3): Data entry, repetitive formatting, simple tasks easily done by AI/automation
