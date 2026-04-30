@@ -1,6 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceSupabase } from '@/lib/supabase'
 
+function dbError(err: unknown, fallback: string) {
+  const msg = (err as { message?: string })?.message ?? String(err)
+  if (msg.includes('relation') || msg.includes('does not exist')) {
+    return 'Database tables missing — run supabase/schema.sql in your Supabase SQL editor.'
+  }
+  if (msg.includes('Invalid API key') || msg.includes('JWT')) {
+    return 'Invalid Supabase credentials — check SUPABASE_SERVICE_KEY in your environment variables.'
+  }
+  if (msg.includes('fetch failed') || msg.includes('ECONNREFUSED')) {
+    return 'Cannot reach Supabase — check NEXT_PUBLIC_SUPABASE_URL in your environment variables.'
+  }
+  return msg || fallback
+}
+
 export async function GET() {
   try {
     const db = getServiceSupabase()
@@ -19,7 +33,7 @@ export async function GET() {
     return NextResponse.json({ company: data })
   } catch (err) {
     console.error(err)
-    return NextResponse.json({ error: 'Failed to fetch company' }, { status: 500 })
+    return NextResponse.json({ error: dbError(err, 'Failed to fetch company') }, { status: 500 })
   }
 }
 
@@ -34,7 +48,6 @@ export async function POST(req: NextRequest) {
 
     const db = getServiceSupabase()
 
-    // Check if company exists
     const { data: existing } = await db.from('companies').select('id').limit(1).single()
 
     let company
@@ -60,6 +73,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ company })
   } catch (err) {
     console.error(err)
-    return NextResponse.json({ error: 'Failed to save company' }, { status: 500 })
+    return NextResponse.json({ error: dbError(err, 'Failed to save company') }, { status: 500 })
   }
 }
