@@ -1,0 +1,15 @@
+{
+  "/api/kpis/route": "/api/kpis",
+  "/_not-found/page": "/_not-found",
+  "/api/company/route": "/api/company",
+  "/api/players/route": "/api/players",
+  "/api/leaderboard/route": "/api/leaderboard",
+  "/api/tasks/route": "/api/tasks",
+  "/api/cron/weekly-winner/route": "/api/cron/weekly-winner",
+  "/log/page": "/log",
+  "/leaderboard/page": "/leaderboard",
+  "/kpis/page": "/kpis",
+  "/page": "/",
+  "/setup/page": "/setup",
+  "/api/cron/reminders/route": "/api/cron/reminders"
+}
