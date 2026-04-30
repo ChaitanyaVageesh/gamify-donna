@@ -63,10 +63,13 @@ export async function scoreTask(params: {
 
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+    // Try gemini-1.5-flash first, fall back to gemini-pro if needed
+    const modelName = 'gemini-1.5-flash'
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: modelName,
       generationConfig: { temperature: 0.3, maxOutputTokens: 512 },
     })
+    console.debug(`Using Gemini model: ${modelName}`)
 
     const kpiContext = kpi
       ? `KPI: "${kpi.title}" — ${kpi.description ?? ''}\nKPI Priority: #${kpi.priority} (${kpi.priority === 1 ? 'CRITICAL' : kpi.priority === 2 ? 'HIGH' : 'MEDIUM'})`
@@ -128,6 +131,7 @@ export async function suggestKPIs(company: Company, existingKPIs: KPI[]): Promis
   suggestions: Array<{ title: string; description: string; why: string }>
 }> {
   if (!process.env.GEMINI_API_KEY) {
+    console.warn('GEMINI_API_KEY not set, using fallback suggestions')
     return {
       analysis: [],
       suggestions: [
@@ -138,12 +142,16 @@ export async function suggestKPIs(company: Company, existingKPIs: KPI[]): Promis
     }
   }
 
+  console.debug('suggestKPIs called for company:', company.name, 'stage:', company.state)
+
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+    const modelName = 'gemini-1.5-flash'
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: modelName,
       generationConfig: { temperature: 0.5, maxOutputTokens: 1024 },
     })
+    console.debug(`Using Gemini model for KPI suggestions: ${modelName}`)
 
     const kpiList = existingKPIs.map(k => `- ${k.title}: ${k.description ?? ''} (target: ${k.target_value}${k.unit})`).join('\n')
 
