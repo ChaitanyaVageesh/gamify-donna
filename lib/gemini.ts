@@ -208,8 +208,12 @@ Return ONLY valid JSON, no markdown:
   } catch (err) {
     console.error('Gemini KPI suggestion error:', {
       message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
       error: err
     })
-    return { analysis: [], suggestions: [] }
+    // Return heuristic fallback on error instead of empty
+    console.warn('Falling back to heuristic suggestions due to error')
+    const fallbackSuggestions = getHeuristicSuggestions(company)
+    return { analysis: [], suggestions: fallbackSuggestions }
   }
 }
