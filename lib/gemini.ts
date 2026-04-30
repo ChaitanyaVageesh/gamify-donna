@@ -140,9 +140,23 @@ Return ONLY valid JSON, no markdown:
     const result = await model.generateContent(prompt)
     const text = result.response.text().trim()
     const cleaned = text.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim()
-    return JSON.parse(cleaned)
+    const parsed = JSON.parse(cleaned)
+    
+    // Ensure suggestions array exists and has items
+    if (!parsed.suggestions || !Array.isArray(parsed.suggestions)) {
+      console.warn('Gemini returned invalid suggestions structure:', parsed)
+      return { 
+        analysis: parsed.analysis || [], 
+        suggestions: [] 
+      }
+    }
+    
+    return parsed
   } catch (err) {
-    console.error('Gemini KPI suggestion error:', err)
+    console.error('Gemini KPI suggestion error:', {
+      message: err instanceof Error ? err.message : String(err),
+      error: err
+    })
     return { analysis: [], suggestions: [] }
   }
 }

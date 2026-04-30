@@ -126,8 +126,23 @@ export default function KPIsPage() {
     try {
       const res = await fetch(`/api/kpis?company_id=${company.id}&suggest=true`)
       const data = await res.json()
+      console.log('Suggestions response:', data)
+      
+      if (!res.ok) {
+        console.error('API error:', data.error)
+        showToast(`Failed to get suggestions: ${data.error}`, 'error')
+        return
+      }
+      
+      if (!data.suggestions) {
+        console.warn('No suggestions in response')
+        showToast('No suggestions available', 'error')
+        return
+      }
+      
       setSuggestions(data.suggestions)
-    } catch {
+    } catch (err) {
+      console.error('Suggestions fetch error:', err)
       showToast('Failed to get suggestions', 'error')
     } finally {
       setLoadingSuggestions(false)

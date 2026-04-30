@@ -24,11 +24,16 @@ export async function GET(req: NextRequest) {
     if (error) throw error
 
     if (suggest === 'true') {
-      const { data: company } = await db
+      const { data: company, error: companyError } = await db
         .from('companies')
         .select('*')
         .eq('id', companyId)
         .single()
+
+      if (companyError) {
+        console.error('Failed to fetch company:', companyError)
+        return NextResponse.json({ kpis, suggestions: null, error: 'Failed to fetch company' }, { status: 500 })
+      }
 
       const suggestions = company ? await suggestKPIs(company, kpis ?? []) : null
       return NextResponse.json({ kpis, suggestions })
