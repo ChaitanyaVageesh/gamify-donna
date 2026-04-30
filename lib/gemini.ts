@@ -4,6 +4,33 @@ import { calculateScore } from './utils'
 
 const DEFAULT_SCORE = 7
 
+// Lightweight heuristic fallback for KPI suggestions when LLM fails
+function getHeuristicSuggestions(company: Company) {
+  const stage = (company.state || '').toLowerCase()
+  if (stage.includes('pre') || stage.includes('idea') || stage.includes('early')) {
+    return [
+      { title: 'User Signups', description: 'New user signups per week', why: 'Early indicator of interest' },
+      { title: 'Activation Rate', description: 'Share of new users who complete onboarding', why: 'Shows initial product value' },
+      { title: 'Weekly Active Users (WAU)', description: 'Count of users performing a key action weekly', why: 'Measures engagement' },
+    ]
+  }
+
+  if (stage.includes('growth') || stage.includes('scale')) {
+    return [
+      { title: 'Monthly Recurring Revenue (MRR)', description: 'Recurring revenue recognized monthly', why: 'Revenue growth focus' },
+      { title: 'Customer Acquisition Cost (CAC)', description: 'Marketing + Sales cost per new customer', why: 'Unit economics' },
+      { title: 'Gross Churn Rate', description: 'Percentage of customers lost each month', why: 'Retention health' },
+    ]
+  }
+
+  // Default fallback
+  return [
+    { title: 'Monthly Recurring Revenue (MRR)', description: 'Track monthly subscription or recurring revenue', why: 'Core north-star metric for most startups' },
+    { title: 'Weekly Active Users', description: 'Count of users who take a key action weekly', why: 'Measures product-market fit and engagement' },
+    { title: 'Customer Acquisition Cost (CAC)', description: 'Total sales & marketing spend / new customers', why: 'Essential for understanding unit economics' },
+  ]
+}
+
 function getDefaultScoreResult(
   kpiPriority: number,
   contributionType: 'direct' | 'indirect'
@@ -139,18 +166,44 @@ Return ONLY valid JSON, no markdown:
 
     const result = await model.generateContent(prompt)
     const text = result.response.text().trim()
-    const cleaned = text.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim()
-    const parsed = JSON.parse(cleaned)
-    
-    // Ensure suggestions array exists and has items
-    if (!parsed.suggestions || !Array.isArray(parsed.suggestions)) {
-      console.warn('Gemini returned invalid suggestions structure:', parsed)
-      return { 
-        analysis: parsed.analysis || [], 
-        suggestions: [] 
+
+    // Log raw LLM output for debugging in server logs
+    console.debug('Gemini raw suggestions output:', text)
+
+    // Clean simple code fences
+    let cleaned = text.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim()
+
+    // Try to parse JSON robustly. LLMs sometimes inject extra text.
+    let parsed: any = null
+    try {
+      parsed = JSON.parse(cleaned)
+    } catch (e) {
+      // Attempt to extract the first JSON object from the response
+      const match = cleaned.match(/({[\s\S]*})/)
+      if (match) {
+        try {
+          parsed = JSON.parse(match[1])
+        } catch (e2) {
+          console.warn('Failed to parse JSON from extracted substring:', e2)
+        }
       }
     }
-    
+
+    if (!parsed) {
+      console.warn('Gemini returned non-JSON or unparsable suggestions output')
+      // Provide a lightweight heuristic fallback based on company stage
+      const fallbackSuggestions = getHeuristicSuggestions(company)
+      return { analysis: [], suggestions: fallbackSuggestions }
+    }
+
+    // Ensure suggestions array exists and has items
+    if (!parsed.suggestions || !Array.isArray(parsed.suggestions) || parsed.suggestions.length === 0) {
+      console.warn('Gemini returned empty suggestions array, parsed:', parsed)
+      // If analysis exists, keep it and try to generate suggestions heuristically
+      const suggestions = getHeuristicSuggestions(company)
+      return { analysis: parsed.analysis || [], suggestions }
+    }
+
     return parsed
   } catch (err) {
     console.error('Gemini KPI suggestion error:', {
